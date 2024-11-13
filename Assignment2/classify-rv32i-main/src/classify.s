@@ -219,13 +219,13 @@ classify:
     #mul a1, t0, t1 # length of h array and set it as second argument
     # FIXME: Replace 'mul' with your own implementation
     addi sp, sp, -8         
-    sw a1, 0(sp)            
+    sw a0, 0(sp)         
     sw a2, 4(sp)     
     mv a1, t0
     mv a2, t1
-    jal multiply_b
-    
-    #lw a1, 0(sp)               
+    jal multiply
+    mv a1, a0
+    lw a0, 0(sp)             
     lw a2, 4(sp)               
     addi sp, sp, 8 
 
@@ -325,13 +325,14 @@ classify:
     #mul a1, t0, t1 # load length of array into second arg
     # FIXME: Replace 'mul' with your own implementation
     addi sp, sp, -8         
-    sw a1, 0(sp)            
+    sw a0, 0(sp)            
     sw a2, 4(sp)     
     mv a1, t0
     mv a2, t1
-    jal multiply_b
-
-    #lw a1, 0(sp)               
+    jal multiply
+    mv a1, a0
+    
+    lw a0, 0(sp)               
     lw a2, 4(sp)               
     addi sp, sp, 8 
     
@@ -432,74 +433,35 @@ error_malloc:
     j exit
 
 # =======================================================
-#for mul a0 
+#multiply function
 #Input 
 #        a1: multiplicand
 #        a2: multiplier
 #Output 
 #        a0: multiplication result
 # =======================================================
+
 multiply:
-    addi sp, sp, -12         
-    sw t0, 0(sp)            
-    sw t1, 4(sp) 
-    sw t2, 8(sp)           
+    addi sp, sp, -8          # Allocate stack space
+    sw t0, 0(sp)              # Save t0 to stack
+    sw t1, 4(sp)              # Save t1 to stack
     li      t0, 0             # result
-    li      t1, 0             # counter
-    li      t2, 32
 multiply_loop:
-    andi    t4, a2, 1         # check if the LSB is 1
-    beqz    t4, skip_add      # skip if  LSB is zero
-    add     t0, t0, a1        # update result
+    andi    t1, a2, 1         # check if the LSB of a2 is 1
+    beqz    t1, skip_add      # skip if LSB is zero
+    add     t0, t0, a1        # add multiplicand to result
 
 skip_add:
     slli    a1, a1, 1         # left shift multiplicand
-    srli    a2, a2, 1         # right shift
-    addi    t1, t1, 1         # update counter
-    blt     t1, t2, multiply_loop 
+    srli    a2, a2, 1         # right shift multiplier
+    bnez    a2, multiply_loop # repeat if multiplier is not zero
 
-    mv a0, t0                 #set a0 as the answer
+    mv a0, t0                 # set a0 as the answer
 
-    lw t0, 0(sp)               
-    lw t1, 4(sp)               
-    lw t2, 8(sp)
-    addi sp, sp, 12
+    lw t0, 0(sp)              # Restore t0 from stack
+    lw t1, 4(sp)              # Restore t1 from stack
+    addi sp, sp, 8           # Deallocate stack space
 
-    ret
-# =======================================================
-#for mul a1    
-#Input 
-#        a1: multiplicand
-#        a2: multiplier
-#Output 
-#        a1: multiplication result
-# =======================================================
-multiply_b:
-    addi sp, sp, -12         
-    sw t0, 0(sp)            
-    sw t1, 4(sp) 
-    sw t2, 8(sp)           
-    li      t0, 0             # result
-    li      t1, 0             # counter
-    li      t2, 32
-multiply_loop_b:
-    andi    t4, a2, 1         # check if the LSB is 1
-    beqz    t4, skip_add_b    # skip if  LSB is zero
-    add     t0, t0, a1        # update result
+    ret                        # Return from function
 
-skip_add_b:
-    slli    a1, a1, 1         # left shift multiplicand
-    srli    a2, a2, 1         # right shift
-    addi    t1, t1, 1         # update counter
-    blt     t1, t2, multiply_loop_b 
-
-    mv a1, t0                 #set a1 as the answer
-
-    lw t0, 0(sp)               
-    lw t1, 4(sp)               
-    lw t2, 8(sp)
-    addi sp, sp, 12
-
-    ret
-    
 # =======================================================
